@@ -24,14 +24,14 @@
      playhead advances. Each sentence: [text, from, to] = playhead span over which
      its words appear; *stars* mark emphasised words. The first sentence types
      itself on load. The hero offer (headline + button) appears at the end and stays. */
-  var RANGES = [[.94, 1]];
+  var RANGES = [[.955, 1]];
   var STORY = {
     a: [['Ai zis *„într-o zi”* de atâtea ori.', -1, -1],
         ['Pianul a rămas acolo, răbdător.', .07, .19],
         ['Într-o seară te așezi.', .23, .30],
         ['Începi cu *melodia care ți-e dragă*, nu cu game.', .33, .47],
         ['Mâinile ezită o clipă, apoi găsesc drumul.', .52, .66],
-        ['Și cineva din casă se oprește în ușă *să asculte*.', .72, .89]],
+        ['Și cineva din casă se oprește în ușă *să asculte*.', .72, .86]],
     b: [['Bați ritmul cu degetele *pe birou*.', -1, -1],
         ['În ședințe. La semafor. Pe volan.', .04, .19],
         ['Muzica a fost mereu acolo.', .23, .30],
@@ -116,10 +116,11 @@
   function pad(n, w) { n = String(n); while (n.length < w) n = '0' + n; return n; }
   function frameUrl(i) { return base + manifest.pattern.replace('%04d', pad(i + 1, 4)); }
 
-  /* Typewriter: every letter is its own span, hidden until typed. The playhead
-     decides how many words are due; a typing loop then taps the letters out one
-     by one at a human rhythm (and catches up faster when far behind). */
-  var words = [], chars = [], storyEl = null, typed = 0, due = 0, typing = false;
+  /* Typewriter story. Every sentence is its own line and every letter its own
+     span, hidden until typed. One scroll = the next sentence: the film plays on
+     to that sentence's moment (STORY[..][2]) while the letters are tapped out at
+     a human rhythm. Older sentences roll upwards and dim, like film credits. */
+  var sents = [], chars = [], storyEl = null, rollEl = null, typed = 0, due = 0, typing = false, sentIdx = 0;
   function buildBeats() {
     var d = document.createElement('div');
     d.className = 'beat beat--offer';
@@ -130,11 +131,15 @@
     beatsEl.appendChild(d);
     beatEls.push(d);
 
-    storyEl = document.createElement('p');
+    storyEl = document.createElement('div');
     storyEl.className = 'story';
+    rollEl = document.createElement('div');
+    rollEl.className = 'story__roll';
+    storyEl.appendChild(rollEl);
     STORY[ver].forEach(function (sn) {
-      var em = false, parts = sn[0].split(' ');
-      parts.forEach(function (w, k) {
+      var line = document.createElement('p'); line.className = 's';
+      var em = false;
+      sn[0].split(' ').forEach(function (w) {
         if (w.charAt(0) === '*') em = true;
         var close = /\*[.,]?$/.test(w);
         var sp = document.createElement('span');
@@ -143,13 +148,22 @@
           var c = document.createElement('span'); c.className = 'c'; c.textContent = ch;
           sp.appendChild(c); chars.push(c);
         });
-        storyEl.appendChild(sp);
-        storyEl.appendChild(document.createTextNode(' '));
-        words.push({ end: chars.length, at: sn[1] < 0 ? -1 : sn[1] + (sn[2] - sn[1]) * (parts.length === 1 ? 0 : k / (parts.length - 1)) });
+        line.appendChild(sp);
+        line.appendChild(document.createTextNode(' '));
         if (close) em = false;
       });
+      rollEl.appendChild(line);
+      sents.push({ el: line, end: chars.length, stop: sn[2] < 0 ? STOPS[0] : sn[2] });
     });
     beatsEl.appendChild(storyEl);
+    window.addEventListener('resize', function () { focusSent(sentIdx); });
+  }
+  function focusSent(i) {                      // roll so that sentence i sits on the reading line
+    if (!rollEl) return;
+    var line = sents[i].el;
+    var anchor = storyEl.clientHeight * (window.innerWidth < 768 ? .8 : .66);
+    rollEl.style.transform = 'translateY(' + Math.round(anchor - (line.offsetTop + line.offsetHeight)) + 'px)';
+    sents.forEach(function (sn, k) { sn.el.classList.toggle('old', k < i); });
   }
   function typeNext() {
     if (typed >= due) { typing = false; return; }
@@ -158,8 +172,8 @@
     c.classList.add('on', 'last');
     typed++;
     var behind = due - typed, ch = c.textContent;
-    var wait = behind > 60 ? 8 : behind > 30 ? 22 : 38 + Math.random() * 60;
-    if (behind <= 30 && /[.,]/.test(ch)) wait += 200;        // a breath after punctuation
+    var wait = behind > 110 ? 6 : behind > 60 ? 20 : 34 + Math.random() * 58;
+    if (behind <= 60 && /[.,]/.test(ch)) wait += 190;        // a breath after punctuation
     setTimeout(typeNext, wait);
   }
   function typeTo(n) {
@@ -167,16 +181,13 @@
     if (!typing && typed < due) { typing = true; typeNext(); }
   }
   function typeIntro() {                       // first sentence types itself on load
-    var n = 0;
-    words.forEach(function (w) { if (w.at < 0) n = w.end; });
-    setTimeout(function () { typeTo(n); }, 700);
+    focusSent(0);
+    setTimeout(function () { typeTo(sents[0].end); }, 2000);
+    setTimeout(function () { document.body.classList.add('story-ready'); }, 5200);
   }
   function story(p) {
     if (!storyEl) return;
-    var n = 0;
-    for (var i = 0; i < words.length; i++) if (words[i].at >= 0 && p >= words[i].at) n = words[i].end;
-    if (n) typeTo(n);
-    var o = p < .9 ? 1 : Math.max(0, 1 - (p - .9) / .035);
+    var o = p < .93 ? 1 : Math.max(0, 1 - (p - .93) / .03);
     storyEl.style.opacity = o.toFixed(3);
     storyEl.style.visibility = o < .01 ? 'hidden' : 'visible';
   }
@@ -285,18 +296,13 @@
   var STOPS = [ver === 'a' ? 20 / 504 : 0, 120 / 504, 312 / 504, 1];   // A skips its slow first frames
   var vel = 0, lastT = 0, arrivedAt = 0;
   var SPEED = 1.35;                            // x real time while cruising
-  /* Scrolling writes the paragraph: every bit of scroll moves the film a little
-     forward and new words appear. Forward only. One gesture can only pull the film
-     a short way ahead (LEAD), so a hard flick does not skip the story; only
-     sustained hammering speeds it up. Left alone after the first scroll, the film
-     keeps drifting very slowly so the picture never freezes. */
-  var PX = 2600, LEAD = .12, DRIFT = .12;
-  var started = false, finish = false, filmGest = false, lastIn = 0, lastMag = 0, gestStart = 0;
-  var pressure = 0, pressureT = 0;
-  function rushNow() {
-    var p = pressure * Math.pow(0.5, (performance.now() - pressureT) / 600);
-    return finish ? 7 : 1 + Math.min(6, Math.max(0, p - 4500) / 1200);
-  }
+  /* One scroll gesture = the next sentence. The film then plays by itself, with
+     eased starts and stops, up to that sentence's moment; the amount of scroll
+     does not matter and wheel inertia is ignored. Forward only. After a sentence
+     the picture keeps drifting very slowly, and if nobody scrolls the next
+     sentence arrives on its own. Five gestures in quick succession skip to the end. */
+  var DRIFT = .1;
+  var started = false, finish = false, filmGest = false, lastIn = 0, lastMag = 0, gestStart = 0, gestures = [];
   function newGesture(delta) {
     var now = performance.now(), mag = Math.abs(delta);
     var fresh = now - lastIn > 130 || (mag > 30 && mag > lastMag * 2.5 && now - gestStart > 300);
@@ -305,6 +311,19 @@
     return fresh;
   }
   function locked() { return window.scrollY <= 2 && cur < 1; }
+  function advance() {
+    if (!started) { started = true; document.body.classList.add('film-started'); }
+    if (sentIdx < sents.length - 1) {
+      sentIdx++;
+      focusSent(sentIdx);
+      typeTo(sents[sentIdx].end);
+      target = Math.max(target, sents[sentIdx].stop);
+    } else {
+      target = 1;                              // after the last sentence: the hero offer
+    }
+    kick();
+  }
+  function nextStop() { return sentIdx < sents.length - 1 ? sents[sentIdx + 1].stop : 1; }
   function intent(delta) {                     // returns true when the input was used by the film
     if (!manifest) return false;
     if (delta > 0 && window.scrollY <= 2 && cur >= 1) {   // tail of the gesture that ended the film: do not leak into the page
@@ -312,18 +331,14 @@
       return filmGest;
     }
     if (delta > 0 && locked()) {
-      newGesture(delta);
       filmGest = true;
-      if (!started) { started = true; document.body.classList.add('film-started'); }
-      var r = rushNow(), cap = cur + LEAD + .05 * (r - 1);
-      var want = Math.max(target, cur) + delta / PX;
-      if (want > cap) {
+      if (newGesture(delta)) {
         var now = performance.now();
-        pressure = pressure * Math.pow(0.5, (now - pressureT) / 600) + (want - cap) * PX; pressureT = now;
-        want = cap;
+        gestures = gestures.filter(function (t) { return now - t < 2600; });
+        gestures.push(now);
+        if (gestures.length >= 5) { finish = true; target = 1; typeTo(chars.length); kick(); }
+        else advance();
       }
-      target = Math.min(1, want);
-      kick();
       return true;
     }
     return false;
@@ -333,12 +348,16 @@
     var dt = lastT ? Math.min(0.05, (now - lastT) / 1000) : 0.016;
     lastT = now;
     var unit = 24 / (n - 1);                                 // playhead units per second at real time
-    var r = rushNow();
+    var r = finish ? 7 : 1;
     var drift = (started && cur < 1) ? unit * DRIFT : 0;
     var dist = target - cur;
-    var want = dist > 0 ? Math.min(1.6 * unit * r, Math.max(drift, dist * 3 * Math.sqrt(r))) : drift;
-    vel += (want - vel) * (1 - Math.exp(-dt / 0.25));        // gentle start, gentle change of pace
+    var want = dist > 0 ? Math.min(SPEED * unit * r, Math.max(drift, dist * 2.2 * Math.sqrt(r))) : drift;
+    vel += (want - vel) * (1 - Math.exp(-dt / 0.28));        // gentle start, gentle change of pace
     cur += vel * dt;
+    if (!finish && dist <= 0 && started && cur < 1) {        // drifting: nobody scrolled for a while
+      var here = sents[sentIdx].stop, nx = nextStop();
+      if (cur > here + (nx - here) * .45 && typed >= due) advance();
+    }
     if (cur >= 1) { cur = 1; vel = 0; target = 1; finish = false; document.body.classList.add('film-done'); }
     var pos = cur * (n - 1), f = Math.min(n - 1, Math.floor(pos)), frac = pos - f;
     var key = Math.round(pos * 16);
