@@ -315,7 +315,7 @@
      sentence arrives on its own. Five gestures in quick succession skip to the end. */
   var DRIFT = .05;
   var started = false, finish = false, filmGest = false, lastIn = 0, lastMag = 0, gestStart = 0, gestures = [], firstT = 0, lastAdv = 0;
-  var GRACE = 5000;                           // ms of normal pace before hammering may skip ahead
+  var RUSH = 1.6;                             // constant scrolling only speeds the film up a little, never skips it
   function newGesture(delta) {
     var now = performance.now(), mag = Math.abs(delta);
     var fresh = now - lastIn > 130 || (mag > 30 && mag > lastMag * 2.5 && now - gestStart > 300);
@@ -353,8 +353,7 @@
         gestures = gestures.filter(function (t) { return now - t < 2600; });
         gestures.push(now);
         if (gestures.length >= 5) {            // hammering: hold the normal pace for the first seconds, then skip
-          if (started && now - firstT > GRACE) { finish = true; target = 1; typeTo(chars.length); kick(); }
-          else if (now - lastAdv > 550) advance();
+          if (now - lastAdv > 550) advance();
         }
         else advance();
       }
@@ -367,7 +366,7 @@
     var dt = lastT ? Math.min(0.05, (now - lastT) / 1000) : 0.016;
     lastT = now;
     var unit = 24 / (n - 1);                                 // playhead units per second at real time
-    var r = finish ? 7 : 1;
+    var r = finish ? 7 : (gestures.length >= 5 && now - gestures[gestures.length - 1] < 700) ? RUSH : 1;
     var drift = (started && cur < 1) ? unit * DRIFT : 0;
     var dist = target - cur;
     var want = dist > 0 ? Math.min(SPEED * unit * r, Math.max(drift, dist * 2.2 * Math.sqrt(r))) : drift;
@@ -377,7 +376,7 @@
       var here = steps[stepIdx].stop, nx = nextStop();
       if (cur > here + (nx - here) * .6 && typed >= due) advance();
     }
-    if (cur >= 1) { cur = 1; vel = 0; target = 1; finish = false; document.body.classList.add('film-done'); }
+    if (cur >= 1) { cur = 1; vel = 0; target = 1; finish = false; document.body.classList.add('film-done'); document.documentElement.classList.remove('film-lock'); }
     var pos = cur * (n - 1), f = Math.min(n - 1, Math.floor(pos)), frac = pos - f;
     var key = Math.round(pos * 16);
     if (key !== curFrame) {
@@ -434,7 +433,7 @@
     }
     function pump() { while (active < MAX && next < n) load(next++); }
     var first = load(0);
-    var go = function () { resize(); target = cur = (window.scrollY > 10 ? 1 : STOPS[0]); arrivedAt = performance.now(); curFrame = -1; draw(Math.round(cur * (n - 1))); beatStyle(cur); if (cur >= 1) document.body.classList.add('film-done'); else typeIntro(); pump(); };
+    var go = function () { resize(); target = cur = (window.scrollY > 10 ? 1 : STOPS[0]); arrivedAt = performance.now(); curFrame = -1; draw(Math.round(cur * (n - 1))); beatStyle(cur); if (cur >= 1) document.body.classList.add('film-done'); else { document.documentElement.classList.add('film-lock'); typeIntro(); } pump(); };
     if (first.complete && first.naturalWidth) go(); else first.addEventListener('load', go, { once: true });
   }
 

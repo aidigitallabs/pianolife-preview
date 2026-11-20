@@ -444,3 +444,6 @@ body.past-film .totop{opacity:1;visibility:visible;transform:none}
   .story::after{font-size:11.5px}
   .totop{right:12px;bottom:16px}
 }
+
+/* page cannot be scrolled (wheel, touch, keys, scrollbar) until the film has played */
+html.film-lock{overflow:hidden;scrollbar-gutter:stable}
