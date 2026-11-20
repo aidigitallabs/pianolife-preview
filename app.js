@@ -117,10 +117,10 @@
   function frameUrl(i) { return base + manifest.pattern.replace('%04d', pad(i + 1, 4)); }
 
   /* Typewriter story. Every sentence is its own line and every letter its own
-     span, hidden until typed. One scroll = the next sentence: the film plays on
+     span, hidden until typed. One scroll = the next few words: the film plays on
      to that sentence's moment (STORY[..][2]) while the letters are tapped out at
      a human rhythm. Older sentences roll upwards and dim, like film credits. */
-  var sents = [], chars = [], storyEl = null, rollEl = null, typed = 0, due = 0, typing = false, sentIdx = 0;
+  var sents = [], steps = [], stepIdx = 0, chars = [], storyEl = null, rollEl = null, typed = 0, due = 0, typing = false, sentIdx = 0;
   function buildBeats() {
     var d = document.createElement('div');
     d.className = 'beat beat--offer';
@@ -138,7 +138,7 @@
     storyEl.appendChild(rollEl);
     STORY[ver].forEach(function (sn) {
       var line = document.createElement('p'); line.className = 's';
-      var em = false;
+      var em = false, wEnds = [];
       sn[0].split(' ').forEach(function (w) {
         if (w.charAt(0) === '*') em = true;
         var close = /\*[.,]?$/.test(w);
@@ -150,10 +150,19 @@
         });
         line.appendChild(sp);
         line.appendChild(document.createTextNode(' '));
+        wEnds.push(chars.length);
         if (close) em = false;
       });
       rollEl.appendChild(line);
-      sents.push({ el: line, end: chars.length, stop: sn[2] < 0 ? STOPS[0] : sn[2] });
+      sents.push({ el: line, end: chars.length });
+      /* a sentence is typed over 2-3 scrolls: split it into steps of about four words,
+         each with its own share of the film up to the sentence's moment */
+      var si = sents.length - 1, prev = steps.length ? steps[steps.length - 1].stop : STOPS[0];
+      if (sn[2] < 0) steps.push({ s: si, end: chars.length, stop: STOPS[0] });
+      else {
+        var nC = Math.max(2, Math.ceil(wEnds.length / 4));
+        for (var q = 1; q <= nC; q++) steps.push({ s: si, end: wEnds[Math.ceil(wEnds.length * q / nC) - 1], stop: prev + (sn[2] - prev) * q / nC });
+      }
     });
     beatsEl.appendChild(storyEl);
     window.addEventListener('resize', function () { focusSent(sentIdx); });
@@ -161,9 +170,11 @@
   function focusSent(i) {                      // roll so that sentence i sits on the reading line
     if (!rollEl) return;
     var line = sents[i].el;
-    var anchor = storyEl.clientHeight * (window.innerWidth < 768 ? .8 : .66);
-    rollEl.style.transform = 'translateY(' + Math.round(anchor - (line.offsetTop + line.offsetHeight)) + 'px)';
-    sents.forEach(function (sn, k) { sn.el.classList.toggle('old', k < i); });
+    /* writing starts near the top; each new line nudges the text up by half a line */
+    rollEl.style.transform = 'translateY(' + Math.round(storyEl.clientHeight * .14 - line.offsetTop * .5) + 'px)';
+    sents.forEach(function (sn, k) {            // the newest three lines stay fully lit
+      sn.el.classList.toggle('old', k < i - 2); sn.el.classList.toggle('gone', k < i - 3);
+    });
   }
   function typeNext() {
     if (typed >= due) { typing = false; return; }
@@ -295,13 +306,13 @@
      last scene. Impatient scrolling fast-forwards the film instead. */
   var STOPS = [ver === 'a' ? 20 / 504 : 0, 120 / 504, 312 / 504, 1];   // A skips its slow first frames
   var vel = 0, lastT = 0, arrivedAt = 0;
-  var SPEED = 1.35;                            // x real time while cruising
+  var SPEED = 1.0;                            // x real time while cruising
   /* One scroll gesture = the next sentence. The film then plays by itself, with
      eased starts and stops, up to that sentence's moment; the amount of scroll
      does not matter and wheel inertia is ignored. Forward only. After a sentence
      the picture keeps drifting very slowly, and if nobody scrolls the next
      sentence arrives on its own. Five gestures in quick succession skip to the end. */
-  var DRIFT = .1;
+  var DRIFT = .05;
   var started = false, finish = false, filmGest = false, lastIn = 0, lastMag = 0, gestStart = 0, gestures = [];
   function newGesture(delta) {
     var now = performance.now(), mag = Math.abs(delta);
@@ -313,17 +324,19 @@
   function locked() { return window.scrollY <= 2 && cur < 1; }
   function advance() {
     if (!started) { started = true; document.body.classList.add('film-started'); }
-    if (sentIdx < sents.length - 1) {
-      sentIdx++;
+    if (stepIdx < steps.length - 1) {
+      stepIdx++;
+      var st = steps[stepIdx];
+      sentIdx = st.s;
       focusSent(sentIdx);
-      typeTo(sents[sentIdx].end);
-      target = Math.max(target, sents[sentIdx].stop);
+      typeTo(st.end);
+      target = Math.max(target, st.stop);
     } else {
       target = 1;                              // after the last sentence: the hero offer
     }
     kick();
   }
-  function nextStop() { return sentIdx < sents.length - 1 ? sents[sentIdx + 1].stop : 1; }
+  function nextStop() { return stepIdx < steps.length - 1 ? steps[stepIdx + 1].stop : 1; }
   function intent(delta) {                     // returns true when the input was used by the film
     if (!manifest) return false;
     if (delta > 0 && window.scrollY <= 2 && cur >= 1) {   // tail of the gesture that ended the film: do not leak into the page
@@ -355,8 +368,8 @@
     vel += (want - vel) * (1 - Math.exp(-dt / 0.28));        // gentle start, gentle change of pace
     cur += vel * dt;
     if (!finish && dist <= 0 && started && cur < 1) {        // drifting: nobody scrolled for a while
-      var here = sents[sentIdx].stop, nx = nextStop();
-      if (cur > here + (nx - here) * .45 && typed >= due) advance();
+      var here = steps[stepIdx].stop, nx = nextStop();
+      if (cur > here + (nx - here) * .6 && typed >= due) advance();
     }
     if (cur >= 1) { cur = 1; vel = 0; target = 1; finish = false; document.body.classList.add('film-done'); }
     var pos = cur * (n - 1), f = Math.min(n - 1, Math.floor(pos)), frac = pos - f;
