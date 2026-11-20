@@ -21,14 +21,23 @@
   var VOLUME = 0.55, FADE = 2.4;
 
   var btn = document.createElement('button');
-  btn.type = 'button'; btn.className = 'snd snd--invite';
+  btn.type = 'button'; btn.className = 'snd snd--invite snd--center';
   btn.setAttribute('aria-pressed', 'false');
   btn.setAttribute('aria-label', 'Muzică de fundal: pornește sau oprește');
   btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M4 9.5v5h3.5L12 18V6L7.5 9.5H4z"/>' +
     '<g class="snd__waves"><path d="M15.5 9.2a4 4 0 0 1 0 5.6"/><path d="M18 6.8a7.5 7.5 0 0 1 0 10.4"/></g>' +
-    '<g class="snd__x"><path d="M16 9.5l5 5M21 9.5l-5 5"/></g></svg><span>Sunet</span>';
+    '<g class="snd__x"><path d="M16 9.5l5 5M21 9.5l-5 5"/></g></svg><span>Ascultă cu sunet</span>';
   document.body.appendChild(btn);
+  /* starts in the middle of the screen, then docks above the text */
+  function dock() {
+    if (!btn.classList.contains('snd--center')) return;
+    btn.classList.remove('snd--center'); btn.querySelector('span').textContent = 'Sunet';
+  }
+  var dockT = setInterval(function () {
+    if (document.body.classList.contains('film-started') || window.scrollY > 10) { dock(); clearInterval(dockT); }
+  }, 150);
+  setTimeout(dock, 8000);
 
   var ctx = null, master = null, on = false, cur = -1, loading = null;
   var buffers = [], voices = [];               // voices[i] = { gain, timer, sources }
@@ -124,7 +133,7 @@
       setTimeout(function () { if (!on) ctx.suspend(); }, 650);
     }
   }
-  btn.addEventListener('click', function () { setOn(!on); });
+  btn.addEventListener('click', function () { dock(); setOn(!on); });
   setInterval(update, 300);
   document.addEventListener('visibilitychange', function () {
     if (!ctx || !on) return;

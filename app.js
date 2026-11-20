@@ -13,25 +13,31 @@
     b: 'Lecții de pian live pentru adulți, fără partituri, pornind de la melodiile tale. Prima sesiune durează 30 de minute și e gratuită.'
   };
   var SCENES = {
-    a: ['01 · Pianul te așteaptă', '02 · Nu e prea târziu', '03 · Fără partituri', '04 · Melodia ta'],
+    a: ['01 · Într-o zi', '02 · Te așezi', '03 · Fără partituri', '04 · Melodia ta'],
     b: ['01 · Bați ritmul', '02 · Mâinile tale știu', '03 · Fără partituri', '04 · Melodia ta']
   };
   var NAV = {
     a: [['#metoda', 'Metoda'], ['#andreea', 'Andreea'], ['#intrebari', 'Întrebări']],
     b: [['#incearca', 'Încearcă'], ['#metoda', 'Metoda'], ['#andreea', 'Andreea']]
   };
-  /* Playhead ranges (0..1) in which each headline is visible, then the short
-     script lines that appear between them while a scene is playing. */
-  var RANGES = [[0, .10], [.21, .30], [.60, .70], [.94, 1]];
-  var LINES = {
-    a: [['Ai zis „într-o zi”. De multe ori.', .115, .205],
-        ['Începi cu melodia care ți-e dragă. Nu cu game.', .34, .45],
-        ['Mâinile ezită o clipă. E normal.', .48, .58],
-        ['Cineva din casă se oprește în ușă să asculte.', .76, .90]],
-    b: [['În ședințe. La semafor. Pe volan, când prinzi piesa aia la radio.', .115, .205],
-        ['Muzica a fost mereu acolo. Doar clapele au lipsit.', .34, .45],
-        ['Laptopul poate să aștepte zece minute.', .48, .58],
-        ['Seara, acasă, nu mai e liniște. E melodia ta.', .76, .90]]
+  /* The film text is one paragraph that writes itself word by word as the
+     playhead advances. Each sentence: [text, from, to] = playhead span over which
+     its words appear; *stars* mark emphasised words. The first sentence types
+     itself on load. The hero offer (headline + button) appears at the end and stays. */
+  var RANGES = [[.94, 1]];
+  var STORY = {
+    a: [['Ai zis *„într-o zi”* de atâtea ori.', -1, -1],
+        ['Pianul a rămas acolo, răbdător.', .07, .19],
+        ['Într-o seară te așezi.', .23, .30],
+        ['Începi cu *melodia care ți-e dragă*, nu cu game.', .33, .47],
+        ['Mâinile ezită o clipă, apoi găsesc drumul.', .52, .66],
+        ['Și cineva din casă se oprește în ușă *să asculte*.', .72, .89]],
+    b: [['Bați ritmul cu degetele *pe birou*.', -1, -1],
+        ['În ședințe. La semafor. Pe volan.', .04, .19],
+        ['Muzica a fost mereu acolo.', .23, .30],
+        ['Doar *clapele* au lipsit.', .33, .45],
+        ['Laptopul poate să aștepte zece minute.', .52, .66],
+        ['Seara, acasă, nu mai e liniște. E *melodia ta*.', .72, .89]]
   };
 
   var q = new URLSearchParams(location.search).get('v');
@@ -66,7 +72,7 @@
   /* beat 1 offer: eyebrow above the headline, sub-paragraph, button and facts below */
   function offer(box, h) {
     var eb = document.createElement('p');
-    eb.className = 'beat__eyebrow'; eb.textContent = 'Pian pentru adulți · online · după ureche';
+    eb.className = 'beat__eyebrow'; eb.textContent = 'Pian pentru adulți · online · fără partituri';
     box.insertBefore(eb, h);
     var sub = document.createElement('p');
     sub.className = 'beat__sub'; sub.textContent = OFFER[ver];
@@ -88,6 +94,13 @@
     revealEls.forEach(function (el) { io.observe(el); });
   } else { revealEls.forEach(function (el) { el.classList.add('in'); }); }
 
+  /* ---------- back to top (shown once the film is out of view) ---------- */
+  var topBtn = document.createElement('button');
+  topBtn.type = 'button'; topBtn.className = 'totop'; topBtn.setAttribute('aria-label', 'Înapoi sus');
+  topBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+  topBtn.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); });
+  document.body.appendChild(topBtn);
+
   /* ---------- hero ---------- */
   var hero = document.getElementById('hero');
   var canvas = document.getElementById('film');
@@ -103,27 +116,69 @@
   function pad(n, w) { n = String(n); while (n.length < w) n = '0' + n; return n; }
   function frameUrl(i) { return base + manifest.pattern.replace('%04d', pad(i + 1, 4)); }
 
+  /* Typewriter: every letter is its own span, hidden until typed. The playhead
+     decides how many words are due; a typing loop then taps the letters out one
+     by one at a human rhythm (and catches up faster when far behind). */
+  var words = [], chars = [], storyEl = null, typed = 0, due = 0, typing = false;
   function buildBeats() {
-    texts.forEach(function (t, i) {
-      var d = document.createElement('div');
-      d.className = 'beat';
-      var h = document.createElement(i === 0 ? 'h1' : 'h2');
-      headline(h, t);
-      d.appendChild(h);
-      if (i === 0) { d.classList.add('beat--offer'); offer(d, h); }
-      if (i === 3) d.appendChild(ctaLink('btn btn--big'));
-      beatsEl.appendChild(d);
-      beatEls.push(d);
+    var d = document.createElement('div');
+    d.className = 'beat beat--offer';
+    var h = document.createElement('h1');
+    headline(h, texts[0]);
+    d.appendChild(h);
+    offer(d, h);
+    beatsEl.appendChild(d);
+    beatEls.push(d);
+
+    storyEl = document.createElement('p');
+    storyEl.className = 'story';
+    STORY[ver].forEach(function (sn) {
+      var em = false, parts = sn[0].split(' ');
+      parts.forEach(function (w, k) {
+        if (w.charAt(0) === '*') em = true;
+        var close = /\*[.,]?$/.test(w);
+        var sp = document.createElement('span');
+        sp.className = 'w' + (em ? ' w--em' : '');
+        w.replace(/\*/g, '').split('').forEach(function (ch) {
+          var c = document.createElement('span'); c.className = 'c'; c.textContent = ch;
+          sp.appendChild(c); chars.push(c);
+        });
+        storyEl.appendChild(sp);
+        storyEl.appendChild(document.createTextNode(' '));
+        words.push({ end: chars.length, at: sn[1] < 0 ? -1 : sn[1] + (sn[2] - sn[1]) * (parts.length === 1 ? 0 : k / (parts.length - 1)) });
+        if (close) em = false;
+      });
     });
-    LINES[ver].forEach(function (l) {
-      var d = document.createElement('div');
-      d.className = 'beat beat--line';
-      var p = document.createElement('p'); p.textContent = l[0];
-      d.appendChild(p);
-      beatsEl.appendChild(d);
-      beatEls.push(d);
-      RANGES.push([l[1], l[2]]);
-    });
+    beatsEl.appendChild(storyEl);
+  }
+  function typeNext() {
+    if (typed >= due) { typing = false; return; }
+    var c = chars[typed];
+    if (typed > 0) chars[typed - 1].classList.remove('last');
+    c.classList.add('on', 'last');
+    typed++;
+    var behind = due - typed, ch = c.textContent;
+    var wait = behind > 60 ? 8 : behind > 30 ? 22 : 38 + Math.random() * 60;
+    if (behind <= 30 && /[.,]/.test(ch)) wait += 200;        // a breath after punctuation
+    setTimeout(typeNext, wait);
+  }
+  function typeTo(n) {
+    if (n > due) due = n;
+    if (!typing && typed < due) { typing = true; typeNext(); }
+  }
+  function typeIntro() {                       // first sentence types itself on load
+    var n = 0;
+    words.forEach(function (w) { if (w.at < 0) n = w.end; });
+    setTimeout(function () { typeTo(n); }, 700);
+  }
+  function story(p) {
+    if (!storyEl) return;
+    var n = 0;
+    for (var i = 0; i < words.length; i++) if (words[i].at >= 0 && p >= words[i].at) n = words[i].end;
+    if (n) typeTo(n);
+    var o = p < .9 ? 1 : Math.max(0, 1 - (p - .9) / .035);
+    storyEl.style.opacity = o.toFixed(3);
+    storyEl.style.visibility = o < .01 ? 'hidden' : 'visible';
   }
 
   /* scene progress strip: bar i fills while the playhead travels from stop i-1 to stop i */
@@ -214,6 +269,7 @@
       el.style.visibility = o < .01 ? 'hidden' : 'visible';
       el.style.pointerEvents = o > .6 ? 'auto' : 'none';
     }
+    story(p);
     strip(p);
   }
 
@@ -229,13 +285,18 @@
   var STOPS = [ver === 'a' ? 20 / 504 : 0, 120 / 504, 312 / 504, 1];   // A skips its slow first frames
   var vel = 0, lastT = 0, arrivedAt = 0;
   var SPEED = 1.35;                            // x real time while cruising
-  /* One scroll gesture = one new text. PLAY holds the playhead position at which
-     each of the 8 texts is fully readable; the film eases to the next one and waits.
-     Extra input during the same gesture (wheel inertia, a long swipe) is ignored.
-     Only clearly impatient scrolling (5 separate gestures in 2.6 s) runs to the end. */
-  var PLAY = [STOPS[0], .14, .235, .365, .505, .625, .785, 1];   // where each text has just become readable
-  var started = false, boost = false, filmGest = false, rush = 1, lastIn = 0, lastMag = 0, gestStart = 0, gestures = [];
-  function hurry() { return rush; }
+  /* Scrolling writes the paragraph: every bit of scroll moves the film a little
+     forward and new words appear. Forward only. One gesture can only pull the film
+     a short way ahead (LEAD), so a hard flick does not skip the story; only
+     sustained hammering speeds it up. Left alone after the first scroll, the film
+     keeps drifting very slowly so the picture never freezes. */
+  var PX = 2600, LEAD = .12, DRIFT = .12;
+  var started = false, finish = false, filmGest = false, lastIn = 0, lastMag = 0, gestStart = 0;
+  var pressure = 0, pressureT = 0;
+  function rushNow() {
+    var p = pressure * Math.pow(0.5, (performance.now() - pressureT) / 600);
+    return finish ? 7 : 1 + Math.min(6, Math.max(0, p - 4500) / 1200);
+  }
   function newGesture(delta) {
     var now = performance.now(), mag = Math.abs(delta);
     var fresh = now - lastIn > 130 || (mag > 30 && mag > lastMag * 2.5 && now - gestStart > 300);
@@ -244,8 +305,6 @@
     return fresh;
   }
   function locked() { return window.scrollY <= 2 && cur < 1; }
-  function nextStop() { for (var i = 0; i < PLAY.length; i++) if (PLAY[i] > cur + 0.006) return PLAY[i]; return 1; }
-  function prevStop() { for (var i = PLAY.length - 1; i >= 0; i--) if (PLAY[i] < cur - 0.03) return PLAY[i]; return PLAY[0]; }
   function intent(delta) {                     // returns true when the input was used by the film
     if (!manifest) return false;
     if (delta > 0 && window.scrollY <= 2 && cur >= 1) {   // tail of the gesture that ended the film: do not leak into the page
@@ -253,58 +312,34 @@
       return filmGest;
     }
     if (delta > 0 && locked()) {
+      newGesture(delta);
       filmGest = true;
-      if (newGesture(delta)) {
+      if (!started) { started = true; document.body.classList.add('film-started'); }
+      var r = rushNow(), cap = cur + LEAD + .05 * (r - 1);
+      var want = Math.max(target, cur) + delta / PX;
+      if (want > cap) {
         var now = performance.now();
-        gestures = gestures.filter(function (t) { return now - t < 2600; });
-        gestures.push(now);
-        started = true;
-        if (!boost || target < cur) { target = nextStop(); boost = true; }
-        if (gestures.length >= 5) { target = 1; rush = 7; boost = true; }   // clearly wants out
-        kick();
+        pressure = pressure * Math.pow(0.5, (now - pressureT) / 600) + (want - cap) * PX; pressureT = now;
+        want = cap;
       }
-      return true;
-    }
-    if (delta < 0 && window.scrollY <= 2 && cur > STOPS[0] + 0.001) {
-      if (newGesture(delta)) {
-        rush = 1; gestures = [];
-        if (!boost || target > cur) { target = prevStop(); boost = true; }
-        kick();
-      }
+      target = Math.min(1, want);
+      kick();
       return true;
     }
     return false;
-  }
-  /* After the first scroll the film never freezes: it drifts on by itself in slow
-     motion (slower while a text is on screen, so there is time to read) and a
-     scroll only pushes it smoothly to the next text. Neighbouring frames are
-     cross-faded so slow motion stays fluid. */
-  var READ_SECS = 6.5;                         // time each text stays readable if nobody scrolls
-  function pace(p) {                           // drift speed, x real time
-    for (var i = 0; i < RANGES.length; i++) {
-      var a = RANGES[i][0] + .02, b = RANGES[i][1] - .02;
-      if (p >= a && p <= b) return Math.max(.08, Math.min(.4, (b - a) * (manifest.count / 24) / READ_SECS));
-    }
-    return 0.7;
   }
   function tick(now) {
     var n = manifest.count;
     var dt = lastT ? Math.min(0.05, (now - lastT) / 1000) : 0.016;
     lastT = now;
     var unit = 24 / (n - 1);                                 // playhead units per second at real time
-    var drift = (started && cur < 1) ? unit * pace(cur) : 0;
-    var want = drift;
-    if (boost) {
-      var dist = target - cur;
-      var vmax = SPEED * unit * (dist < 0 ? 2.6 : hurry());
-      want = Math.max(-vmax, Math.min(vmax, dist * (dist < 0 ? 2.4 : 2.0 * Math.sqrt(hurry()))));
-      if (dist > 0) want = Math.max(want, drift);            // never slower than the drift: no stop on arrival
-      if ((dist > 0 && want <= drift) || (dist < 0 && dist > -0.003) || dist === 0) { boost = false; rush = 1; }
-    }
-    vel += (want - vel) * (1 - Math.exp(-dt / 0.22));        // gentle start, gentle change of pace
+    var r = rushNow();
+    var drift = (started && cur < 1) ? unit * DRIFT : 0;
+    var dist = target - cur;
+    var want = dist > 0 ? Math.min(1.6 * unit * r, Math.max(drift, dist * 3 * Math.sqrt(r))) : drift;
+    vel += (want - vel) * (1 - Math.exp(-dt / 0.25));        // gentle start, gentle change of pace
     cur += vel * dt;
-    if (cur >= 1) { cur = 1; vel = 0; boost = false; rush = 1; }
-    if (cur < PLAY[0]) { cur = PLAY[0]; vel = 0; }
+    if (cur >= 1) { cur = 1; vel = 0; target = 1; finish = false; document.body.classList.add('film-done'); }
     var pos = cur * (n - 1), f = Math.min(n - 1, Math.floor(pos)), frac = pos - f;
     var key = Math.round(pos * 16);
     if (key !== curFrame) {
@@ -314,7 +349,7 @@
     beatStyle(cur);
     window.plFilm = { cur: cur };           // read by audio.js
     hint.style.opacity = (!started && cur < 1 && window.scrollY <= 2) ? 1 : 0;
-    if (boost || (started && cur < 1) || Math.abs(vel) > 0.0005) requestAnimationFrame(tick);
+    if ((started && cur < 1) || Math.abs(vel) > 0.0005) requestAnimationFrame(tick);
     else { running = false; lastT = 0; vel = 0; }
   }
   function kick() { if (!running && manifest) { running = true; lastT = 0; requestAnimationFrame(tick); } }
@@ -337,7 +372,7 @@
     });
     // scrollbar drag, anchor links, restored scroll position: just finish the film
     window.addEventListener('scroll', function () {
-      if (window.scrollY > 10 && target < 1) { rush = 7; target = 1; boost = true; started = true; kick(); }
+      if (window.scrollY > 10 && target < 1) { finish = true; target = 1; started = true; document.body.classList.add('film-started'); kick(); }
     }, { passive: true });
   }
 
@@ -361,7 +396,7 @@
     }
     function pump() { while (active < MAX && next < n) load(next++); }
     var first = load(0);
-    var go = function () { resize(); target = cur = (window.scrollY > 10 ? 1 : STOPS[0]); arrivedAt = performance.now(); curFrame = -1; draw(Math.round(cur * (n - 1))); beatStyle(cur); pump(); };
+    var go = function () { resize(); target = cur = (window.scrollY > 10 ? 1 : STOPS[0]); arrivedAt = performance.now(); curFrame = -1; draw(Math.round(cur * (n - 1))); beatStyle(cur); if (cur >= 1) document.body.classList.add('film-done'); else typeIntro(); pump(); };
     if (first.complete && first.naturalWidth) go(); else first.addEventListener('load', go, { once: true });
   }
 
