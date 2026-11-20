@@ -22,15 +22,15 @@
   };
   /* Playhead ranges (0..1) in which each headline is visible, then the short
      script lines that appear between them while a scene is playing. */
-  var RANGES = [[0, .10], [.215, .30], [.60, .70], [.94, 1]];
+  var RANGES = [[0, .10], [.21, .30], [.60, .70], [.94, 1]];
   var LINES = {
-    a: [['Ai zis „într-o zi”. De multe ori.', .125, .20],
+    a: [['Ai zis „într-o zi”. De multe ori.', .115, .205],
         ['Începi cu melodia care ți-e dragă. Nu cu game.', .34, .45],
-        ['Mâinile ezită o clipă. E normal.', .49, .575],
+        ['Mâinile ezită o clipă. E normal.', .48, .58],
         ['Cineva din casă se oprește în ușă să asculte.', .76, .90]],
-    b: [['În ședințe. La semafor. Pe volan, când prinzi piesa aia la radio.', .125, .20],
+    b: [['În ședințe. La semafor. Pe volan, când prinzi piesa aia la radio.', .115, .205],
         ['Muzica a fost mereu acolo. Doar clapele au lipsit.', .34, .45],
-        ['Laptopul poate să aștepte zece minute.', .49, .575],
+        ['Laptopul poate să aștepte zece minute.', .48, .58],
         ['Seara, acasă, nu mai e liniște. E melodia ta.', .76, .90]]
   };
 
@@ -227,32 +227,47 @@
   var STOPS = [ver === 'a' ? 20 / 504 : 0, 120 / 504, 312 / 504, 1];   // A skips its slow first frames
   var vel = 0, lastT = 0, arrivedAt = 0;
   var SPEED = 1.35;                            // x real time while cruising
-  var energy = 0, energyT = 0;                 // how hard the visitor is pushing
-  function push(amount) {
-    var now = performance.now();
-    energy = energy * Math.pow(0.5, (now - energyT) / 450) + Math.abs(amount);
-    energyT = now;
-  }
-  function hurry() {
-    var e = energy * Math.pow(0.5, (performance.now() - energyT) / 450);
-    return 1 + Math.min(11, Math.max(0, e - 260) / 170);
+  /* One scroll gesture = one new text. PLAY holds the playhead position at which
+     each of the 8 texts is fully readable; the film eases to the next one and waits.
+     Extra input during the same gesture (wheel inertia, a long swipe) is ignored.
+     Only clearly impatient scrolling (5 separate gestures in 2.6 s) runs to the end. */
+  var PLAY = [STOPS[0], .16, .255, .395, .53, .65, .83, 1];
+  var filmGest = false, rush = 1, lastIn = 0, lastMag = 0, gestStart = 0, gestures = [];
+  function hurry() { return rush; }
+  function newGesture(delta) {
+    var now = performance.now(), mag = Math.abs(delta);
+    var fresh = now - lastIn > 130 || (mag > 30 && mag > lastMag * 2.5 && now - gestStart > 300);
+    lastIn = now; lastMag = mag;
+    if (fresh) gestStart = now;
+    return fresh;
   }
   function locked() { return window.scrollY <= 2 && cur < 1; }
-  function nextStop() { for (var i = 0; i < 4; i++) if (STOPS[i] > cur + 0.001) return STOPS[i]; return 1; }
-  function prevStop() { for (var i = 3; i >= 0; i--) if (STOPS[i] < cur - 0.001) return STOPS[i]; return STOPS[0]; }
+  function nextStop() { for (var i = 0; i < PLAY.length; i++) if (PLAY[i] > cur + 0.001) return PLAY[i]; return 1; }
+  function prevStop() { for (var i = PLAY.length - 1; i >= 0; i--) if (PLAY[i] < cur - 0.001) return PLAY[i]; return PLAY[0]; }
   function intent(delta) {                     // returns true when the input was used by the film
     if (!manifest) return false;
+    if (delta > 0 && window.scrollY <= 2 && cur >= 1) {   // tail of the gesture that ended the film: do not leak into the page
+      if (newGesture(delta)) filmGest = false;
+      return filmGest;
+    }
     if (delta > 0 && locked()) {
-      push(delta);
-      var settled = cur === target && (hurry() > 2.2 || performance.now() - arrivedAt > 450);
-      if (settled) target = nextStop();
-      if (hurry() > 3.4) target = 1;             // clearly wants out: run to the end, fast
-      kick();
+      filmGest = true;
+      if (newGesture(delta)) {
+        var now = performance.now();
+        gestures = gestures.filter(function (t) { return now - t < 2600; });
+        gestures.push(now);
+        if (cur === target || target < cur) target = nextStop();
+        if (gestures.length >= 5) { target = 1; rush = 7; }   // clearly wants out
+        kick();
+      }
       return true;
     }
     if (delta < 0 && window.scrollY <= 2 && cur > STOPS[0] + 0.001) {
-      if (cur === target || target > cur) target = prevStop();
-      kick();
+      if (newGesture(delta)) {
+        rush = 1; gestures = [];
+        if (cur === target || target > cur) target = prevStop();
+        kick();
+      }
       return true;
     }
     return false;
@@ -275,7 +290,7 @@
     window.plFilm = { cur: cur };           // read by audio.js
     hint.style.opacity = (cur === target && cur < 1 && window.scrollY <= 2) ? 1 : 0;
     if (cur !== target) requestAnimationFrame(tick);
-    else { running = false; lastT = 0; arrivedAt = performance.now(); }
+    else { running = false; lastT = 0; arrivedAt = performance.now(); rush = 1; }
   }
   function kick() { if (!running && manifest) { running = true; lastT = 0; requestAnimationFrame(tick); } }
   function bindInput() {
@@ -284,7 +299,7 @@
       if (intent(d)) e.preventDefault();
     }, { passive: false });
     var ty = null;
-    window.addEventListener('touchstart', function (e) { ty = e.touches[0].clientY; }, { passive: true });
+    window.addEventListener('touchstart', function (e) { ty = e.touches[0].clientY; lastIn = 0; }, { passive: true });
     window.addEventListener('touchmove', function (e) {
       if (ty === null) return;
       var y = e.touches[0].clientY, d = (ty - y) * 2.2; ty = y;
@@ -297,7 +312,7 @@
     });
     // scrollbar drag, anchor links, restored scroll position: just finish the film
     window.addEventListener('scroll', function () {
-      if (window.scrollY > 10 && target < 1) { push(4000); target = 1; kick(); }
+      if (window.scrollY > 10 && target < 1) { rush = 7; target = 1; kick(); }
     }, { passive: true });
   }
 
