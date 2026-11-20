@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Academia Piano Life · Pian pentru adulți, după ureche</title>
+<meta name="description" content="Școală online de pian pentru adulți. Înveți după ureche, fără partituri, alături de Andreea Prodan. Prima sesiune este gratuită.">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0a040e">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=v2-2">
+<link rel="stylesheet" href="audio.css?v=1">
+</head>
+<body>
+<script>
+  /* version + motion classes before first paint (the page below the film is built from a template in app.js) */
+  (function () {
+    var v = new URLSearchParams(location.search).get('v') === 'b' ? 'b' : 'a';
+    document.body.className = 'v-' + v + (window.matchMedia('(prefers-reduced-motion: reduce)').matches ? ' reduced' : '');
+  })();
+</script>
+
+<header class="bar">
+  <a class="wordmark" href="#top">Academia <em>Piano</em> Life</a>
+  <nav class="bar__nav" id="nav" aria-label="Secțiuni"></nav>
+  <a class="btn btn--small bar__cta" href="https://calendly.com/academiadepian/30min" target="_blank" rel="noopener" aria-label="Rezervă sesiunea gratuită"><span class="lbl-long">Rezervă sesiunea gratuită</span><span class="lbl-short">Sesiune gratuită</span></a>
+</header>
+
+<!-- Client review only: remove before launch -->
+<nav class="switcher" aria-label="Versiune (doar pentru recenzie)">
+  <a href="?v=a" data-v="a">A</a><span>|</span><a href="?v=b" data-v="b">B</a>
+</nav>
+
+<main id="top">
+<!-- HERO: self-playing film (engine in app.js, do not change its behaviour) -->
+<section class="hero" id="hero" aria-label="Academia Piano Life">
+  <div class="hero__stick">
+    <canvas id="film" aria-hidden="true"></canvas>
+    <div class="hero__scrim"></div>
+    <div class="beats" id="beats"></div>
+    <div class="strip" id="strip" aria-hidden="true"></div>
+    <div class="hint" id="hint"><span>derulează</span><i></i></div>
+    <div class="loadline" id="loadline"><b></b></div>
+  </div>
+</section>
+<!-- Reduced-motion fallback is built by script into this container -->
+<section class="stills" id="stills" hidden></section>
+
+<!-- the page below the film is cloned here from #tpl-a or #tpl-b -->
+<div id="page"></div>
+</main>
+
+<footer class="foot">
+  <span>&copy; Academia Piano Life · Andreea Prodan, Cluj</span>
+  <a href="https://www.youtube.com/@academiadepian" target="_blank" rel="noopener">YouTube</a>
+</footer>
+
+<!-- =====================================================================
+     VERSION A · "Camera caldă" (light, warm, story-led)
+     ===================================================================== -->
+<template id="tpl-a">
+<!-- THE SHEET: the cloth that slid off the piano comes back up as the page -->
+<section class="sheet" data-cover="120">
+  <svg class="sheet__edge" viewBox="0 0 1440 170" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 170 L0 92 C 150 44, 330 18, 540 56 C 730 90, 880 126, 1080 82 C 1230 48, 1350 34, 1440 58 L1440 170 Z" fill="#E9DDCC"/>
+    <path d="M0 170 L0 112 C 170 62, 350 44, 560 78 C 750 108, 900 138, 1090 100 C 1240 70, 1350 58, 1440 78 L1440 170 Z" fill="#F6EFE6"/>
+  </svg>
+  <div class="sheet__body">
+    <div class="wrap">
+      <div class="head">
+        <p class="eyebrow reveal">Te regăsești?</p>
+        <h2 class="reveal" style="--d:.08s">Dorința a rămas. <em>Doar drumul s-a pierdut pe parcurs.</em></h2>
+      </div>
+      <div class="thoughts">
+        <article class="thought reveal">
+          <h3>„Am renunțat în copilărie.”</h3>
+          <p>Exerciții plictisitoare și note pe care nu le înțelegeai. Nu pianul a fost problema, ci felul în care ți l-au arătat.</p>
+        </article>
+        <article class="thought reveal" style="--d:.12s">
+          <h3>„N-am timp.”</h3>
+          <p>Programul tău e plin și e firesc. Aici contează cele câteva minute pe care le ai, nu orele pe care nu le ai.</p>
+        </article>
+        <article class="thought reveal" style="--d:.24s">
+          <h3>„Sunt prea mare ca să mai încep.”</h3>
+          <p>La 30, 40 sau 50 de ani ai un avantaj: știi exact ce melodii îți plac. Un adult începe de la ele, nu de la scale.</p>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- METODA -->
+<section class="sec sec--alt method" id="metoda">
+  <div class="wrap method__grid">
+    <figure class="method__fig reveal">
+      <img src="frames/a/0313.webp" alt="Mâini pe clape, în timp ce partiturile zboară de pe pupitru" loading="lazy">
+      <figcaption>Partiturile pleacă. Urechea rămâne.</figcaption>
+    </figure>
+    <div class="method__txt">
+      <div class="head">
+        <p class="eyebrow reveal">Metoda „Armonie fără Partituri”</p>
+        <h2 class="reveal" style="--d:.08s">Trei pași. <em>Fără partituri.</em></h2>
+      </div>
+      <ol class="nsteps">
+        <li class="reveal"><span class="nsteps__n" aria-hidden="true">1</span><div><h3>Asculți</h3><p>Pornești de la o melodie pe care o știi deja pe dinăuntru. Urechea ta face jumătate din treabă.</p></div></li>
+        <li class="reveal" style="--d:.12s"><span class="nsteps__n" aria-hidden="true">2</span><div><h3>Găsești acordurile</h3><p>Înveți cele trei repere ale oricărei melodii: acasă, plecare și tensiune. Le recunoști cu urechea, nu din hârtie.</p></div></li>
+        <li class="reveal" style="--d:.24s"><span class="nsteps__n" aria-hidden="true">3</span><div><h3>Acompaniezi melodia ta</h3><p>Pui acordurile sub melodie și, la un moment dat, observi că tu cânți. Fără note pe pupitru.</p></div></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- TRY IT: playable keyboard on the ink band -->
+<section class="sec try" id="incearca">
+  <div class="wrap">
+    <div class="try__head">
+      <div class="head">
+        <p class="eyebrow reveal">Chiar aici</p>
+        <h2 class="reveal" style="--d:.08s">Apasă o clapă. <em>Atât de simplu începe.</em></h2>
+      </div>
+      <button class="btn btn--ghost demo reveal" id="demo" type="button"><svg width="14" height="16" viewBox="0 0 14 16" aria-hidden="true"><path d="M1 1 L13 8 L1 15 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span class="demo__lbl">Ascultă un exemplu</span></button>
+    </div>
+    <div class="piano reveal" id="piano" role="application" aria-label="Pian de jucat: clapele roz sunt Do, Mi și Sol"></div>
+    <p class="try__help reveal"><span class="d-only">Clapele roz sunt Do, Mi și Sol. Apasă-le pe rând, apoi împreună: sună a muzică. Acesta e un acord.</span><span class="m-only">Ai apăsat trei clape și sună a muzică: acesta e un acord.</span></p>
+    <p class="try__keys d-only">Poți folosi și tastatura: rândul A S D F G H J K L ; ' Enter pentru clapele albe, W E T Y U O P [ ] \ pentru cele negre.</p>
+  </div>
+</section>
+
+<!-- THE FREE SESSION -->
+<!-- NEEDS CONFIRMATION: the three session steps were written by the designer; confirm with Andreea that they are true. -->
+<section class="sec session" id="sesiune">
+  <div class="wrap session__grid">
+    <div class="session__main">
+      <div class="head">
+        <p class="eyebrow reveal">Sesiunea gratuită</p>
+        <h2 class="reveal" style="--d:.08s">Ce se întâmplă în cele <em>30 de minute</em></h2>
+      </div>
+      <ol class="session__steps">
+        <li class="reveal"><span class="session__n">01</span><span>Spui ce melodie ai vrea să cânți.</span></li>
+        <li class="reveal" style="--d:.1s"><span class="session__n">02</span><span>Vezi, chiar pe ea, cum funcționează metoda.</span></li>
+        <li class="reveal" style="--d:.2s"><span class="session__n">03</span><span>Hotărăști în liniște dacă vrei să continui.</span></li>
+      </ol>
+    </div>
+    <aside class="book reveal" style="--d:.1s">
+      <h3>Prima clapă e o conversație.</h3>
+      <ul class="checks">
+        <li><svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true"><path d="M1 7 L6.5 12.5 L17 1.5"/></svg><span>30 de minute, online, live</span></li>
+        <li><svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true"><path d="M1 7 L6.5 12.5 L17 1.5"/></svg><span>Gratuit</span></li>
+        <li><svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true"><path d="M1 7 L6.5 12.5 L17 1.5"/></svg><span>Fără obligații</span></li>
+      </ul>
+      <a class="btn btn--big btn--block" href="https://calendly.com/academiadepian/30min" target="_blank" rel="noopener">Rezervă sesiunea gratuită</a>
+      <p class="book__note">Alegi ziua și ora direct în calendar.</p>
+    </aside>
+  </div>
+</section>
+
+<!-- TEACHER -->
+<section class="sec sec--alt teacher" id="andreea">
+  <div class="wrap teacher__grid">
+    <!-- PLACEHOLDER: replace with a real portrait of Andreea Prodan -->
+    <div class="ph ph--arch reveal" role="img" aria-label="Loc rezervat pentru portretul Andreei Prodan">[FOTO ANDREEA]</div>
+    <div class="teacher__txt">
+      <p class="eyebrow reveal">Profesoara ta</p>
+      <h2 class="reveal" style="--d:.08s">Andreea Prodan</h2>
+      <p class="lead reveal" style="--d:.14s">Andreea îi ajută pe adulți să cânte la pian după ureche, fără partituri, pornind de la melodiile pe care le iubesc.</p>
+      <ul class="facts reveal" style="--d:.2s">
+        <li><strong>Online, în sesiuni live.</strong> Întrebi pe loc tot ce nu înțelegi.</li>
+        <li><strong>Un scurt recap după fiecare sesiune.</strong> Știi exact ce ai de exersat până data viitoare.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- PROOF -->
+<section class="sec proof">
+  <div class="wrap">
+    <figure class="quote reveal">
+      <blockquote>„Pentru asta am venit aici! <span>Acum cânt după ureche.”</span></blockquote>
+      <figcaption>Cursant, Academia de Pian</figcaption>
+    </figure>
+    <!-- PLACEHOLDERS: two more testimonials with first names + a short clip, to be supplied by the client -->
+    <div class="slots">
+      <div class="ph reveal">[TESTIMONIAL CURSANT + PRENUME]</div>
+      <div class="ph reveal" style="--d:.1s">[TESTIMONIAL CURSANT + PRENUME]</div>
+      <div class="ph reveal" style="--d:.2s">[CLIP SCURT: UN CURSANT CÂNTÂND]</div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ (accordion) -->
+<section class="sec sec--alt faq" id="intrebari">
+  <div class="wrap wrap--narrow">
+    <h2 class="reveal">Întrebări <em>firești</em></h2>
+    <div class="faq__list">
+      <details class="reveal" open><summary>Nu știu să citesc note. E o problemă?</summary><p>Nu. Metoda pornește de la ureche, nu de la partitură.</p></details>
+      <details class="reveal" style="--d:.08s"><summary>Cum se țin lecțiile?</summary><p>Online, în sesiuni live. După fiecare sesiune primești un scurt recap cu ce ai de exersat.</p></details>
+      <!-- PLACEHOLDER answer: needs Andreea -->
+      <details class="reveal" style="--d:.16s"><summary>Am nevoie de pian acasă?</summary><p class="ph-text">[RĂSPUNSUL ANDREEI: PIAN, PIAN DIGITAL SAU CLAPĂ?]</p></details>
+      <!-- PLACEHOLDER answer: needs Andreea -->
+      <details class="reveal" style="--d:.24s"><summary>Cât costă după sesiunea gratuită?</summary><p class="ph-text">[PREȚ SAU „AFLI ÎN SESIUNE”]</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA: the uncovered piano, waiting, nobody on the stool yet -->
+<section class="final" id="rezerva">
+  <img class="final__img" src="frames/a/0121.webp" alt="Pianul descoperit, în lumina dimineții, cu scaunul liber" loading="lazy">
+  <div class="final__scrim" aria-hidden="true"></div>
+  <div class="final__txt">
+    <h2 class="reveal">Locul de la pian <em>e liber.</em></h2>
+    <p class="reveal" style="--d:.1s">30 de minute, gratuit, fără obligații.</p>
+    <a class="btn btn--big btn--film reveal" style="--d:.18s" href="https://calendly.com/academiadepian/30min" target="_blank" rel="noopener">Rezervă sesiunea gratuită</a>
+  </div>
+</section>
+</template>
+
+<!-- =====================================================================
+     VERSION B · "Deja cânți" (dark purple, action-led)
+     ===================================================================== -->
+<template id="tpl-b">
+<!-- THE KEYBOARD IS THE SEAM: it rises over the last frame, half on the film, half on the page -->
+<section class="seam" id="incearca" data-cover="200">
+  <div class="wrap">
+    <div class="seam__board">
+      <div class="piano" id="piano" role="application" aria-label="Pian de jucat"></div>
+    </div>
+    <div class="seam__foot">
+      <div class="head">
+        <h2 class="reveal">Acum tu. <em>Apasă o clapă.</em></h2>
+        <p class="reveal" style="--d:.08s"><span class="d-only">Atât de simplu începe. Clapele chiar cântă: apasă una, apoi încă două.</span><span class="m-only">Atât de simplu începe.</span></p>
+        <p class="try__keys d-only">Poți folosi și tastatura: rândul A S D F G H J K L ; ' Enter pentru clapele albe, W E T Y U O P [ ] \ pentru cele negre.</p>
+      </div>
+      <button class="btn btn--ghost demo reveal" id="demo" type="button"><svg width="14" height="16" viewBox="0 0 14 16" aria-hidden="true"><path d="M1 1 L13 8 L1 15 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span class="demo__lbl">Ascultă un exemplu</span></button>
+    </div>
+  </div>
+</section>
+
+<!-- TE REGĂSEȘTI: thought on the left, answer on the right -->
+<section class="sec recog">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow reveal">Te regăsești?</p>
+      <h2 class="reveal" style="--d:.08s">Dorința a rămas. <em>Doar drumul s-a pierdut pe parcurs.</em></h2>
+    </div>
+    <div class="rows">
+      <article class="row reveal"><h3><span class="row__n">01</span><span>„Am renunțat în copilărie.”</span></h3><p>Exerciții plictisitoare și note pe care nu le înțelegeai. Nu pianul a fost problema, ci felul în care ți l-au arătat.</p></article>
+      <article class="row reveal" style="--d:.1s"><h3><span class="row__n">02</span><span>„N-am timp.”</span></h3><p>Programul tău e plin și e firesc. Aici contează cele câteva minute pe care le ai, nu orele pe care nu le ai.</p></article>
+      <article class="row reveal" style="--d:.2s"><h3><span class="row__n">03</span><span>„Sunt prea mare ca să mai încep.”</span></h3><p>La 30, 40 sau 50 de ani ai un avantaj: știi exact ce melodii îți plac. Un adult începe de la ele, nu de la scale.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- METODA -->
+<section class="sec sec--alt method" id="metoda">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow reveal">Metoda „Armonie fără Partituri”</p>
+      <h2 class="reveal" style="--d:.08s">Trei pași. <em>Fără partituri.</em></h2>
+    </div>
+    <img class="method__wide reveal" src="frames/b/0313.webp" alt="Biroul se transformă în pian sub mâinile care cântă" loading="lazy">
+    <ol class="cols">
+      <li class="reveal"><span class="cols__n" aria-hidden="true">Pasul 1</span><h3>Asculți</h3><p>Pornești de la o melodie pe care o știi deja pe dinăuntru. Urechea ta face jumătate din treabă.</p></li>
+      <li class="reveal" style="--d:.12s"><span class="cols__n" aria-hidden="true">Pasul 2</span><h3>Găsești acordurile</h3><p>Înveți cele trei repere ale oricărei melodii. Le recunoști cu urechea, nu din hârtie. Ascultă-le:</p>
+        <!-- NEEDS CONFIRMATION: acasă / plecare / tensiune = C / F / G major is the designer's assumption -->
+        <div class="chips">
+          <button type="button" class="chip" data-chord="60,64,67" aria-label="Ascultă acordul: acasă"><svg width="10" height="12" viewBox="0 0 14 16" aria-hidden="true"><path d="M1 1 L13 8 L1 15 Z" fill="currentColor"/></svg>acasă</button>
+          <button type="button" class="chip" data-chord="60,65,69" aria-label="Ascultă acordul: plecare"><svg width="10" height="12" viewBox="0 0 14 16" aria-hidden="true"><path d="M1 1 L13 8 L1 15 Z" fill="currentColor"/></svg>plecare</button>
+          <button type="button" class="chip" data-chord="62,67,71" aria-label="Ascultă acordul: tensiune"><svg width="10" height="12" viewBox="0 0 14 16" aria-hidden="true"><path d="M1 1 L13 8 L1 15 Z" fill="currentColor"/></svg>tensiune</button>
+        </div>
+      </li>
+      <li class="reveal" style="--d:.24s"><span class="cols__n" aria-hidden="true">Pasul 3</span><h3>Acompaniezi melodia ta</h3><p>Pui acordurile sub melodie și, la un moment dat, observi că tu cânți. Fără note pe pupitru.</p></li>
+    </ol>
+  </div>
+</section>
+
+<!-- THE FREE SESSION: one booking card -->
+<!-- NEEDS CONFIRMATION: the three session steps were written by the designer; confirm with Andreea that they are true. -->
+<section class="sec session" id="sesiune">
+  <div class="wrap">
+    <div class="card reveal">
+      <div class="head">
+        <p class="eyebrow eyebrow--gold">Sesiunea gratuită</p>
+        <h2>Ce se întâmplă în cele <em>30 de minute</em></h2>
+      </div>
+      <ol class="card__steps">
+        <li class="reveal" style="--d:.1s"><span class="card__n">1</span><span>Spui ce melodie ai vrea să cânți.</span></li>
+        <li class="reveal" style="--d:.2s"><span class="card__n">2</span><span>Vezi, chiar pe ea, cum funcționează metoda.</span></li>
+        <li class="reveal" style="--d:.3s"><span class="card__n">3</span><span>Hotărăști în liniște dacă vrei să continui.</span></li>
+      </ol>
+      <div class="card__foot">
+        <ul class="checks checks--row">
+          <li><svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true"><path d="M1 7 L6.5 12.5 L17 1.5"/></svg><span>30 de minute, online, live</span></li>
+          <li><svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true"><path d="M1 7 L6.5 12.5 L17 1.5"/></svg><span>Gratuit</span></li>
+          <li><svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true"><path d="M1 7 L6.5 12.5 L17 1.5"/></svg><span>Fără obligații</span></li>
+        </ul>
+        <a class="btn btn--big" href="https://calendly.com/academiadepian/30min" target="_blank" rel="noopener">Rezervă sesiunea gratuită</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TEACHER -->
+<section class="sec teacher" id="andreea">
+  <div class="wrap teacher__grid">
+    <div class="teacher__txt">
+      <p class="eyebrow reveal">Profesoara ta</p>
+      <h2 class="reveal" style="--d:.08s">Andreea Prodan</h2>
+      <p class="lead reveal" style="--d:.14s">Andreea îi ajută pe adulți să cânte la pian după ureche, fără partituri, pornind de la melodiile pe care le iubesc.</p>
+      <ul class="facts reveal" style="--d:.2s">
+        <li><strong>Online, în sesiuni live.</strong> Întrebi pe loc tot ce nu înțelegi.</li>
+        <li><strong>Un scurt recap după fiecare sesiune.</strong> Știi exact ce ai de exersat până data viitoare.</li>
+      </ul>
+    </div>
+    <!-- PLACEHOLDER: replace with a real photo of Andreea at the piano -->
+    <div class="ph ph--rect reveal" role="img" aria-label="Loc rezervat pentru o fotografie cu Andreea Prodan la pian">[FOTO ANDREEA LA PIAN]</div>
+  </div>
+</section>
+
+<!-- PROOF -->
+<section class="sec sec--alt proof">
+  <div class="wrap">
+    <figure class="quote reveal">
+      <blockquote>„Pentru asta am venit aici! <span>Acum cânt după ureche.”</span></blockquote>
+      <figcaption>Cursant, Academia de Pian</figcaption>
+    </figure>
+    <!-- PLACEHOLDERS: two more testimonials with first names + a short clip, to be supplied by the client -->
+    <div class="slots">
+      <div class="ph reveal">[TESTIMONIAL CURSANT + PRENUME]</div>
+      <div class="ph reveal" style="--d:.1s">[TESTIMONIAL CURSANT + PRENUME]</div>
+      <div class="ph reveal" style="--d:.2s">[CLIP SCURT: UN CURSANT CÂNTÂND]</div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ: all answers visible, two columns -->
+<section class="sec faq" id="intrebari">
+  <div class="wrap">
+    <h2 class="reveal">Întrebări <em>firești</em></h2>
+    <div class="faq__grid">
+      <div class="faq__item reveal"><h3>Nu știu să citesc note. E o problemă?</h3><p>Nu. Metoda pornește de la ureche, nu de la partitură.</p></div>
+      <div class="faq__item reveal" style="--d:.08s"><h3>Cum se țin lecțiile?</h3><p>Online, în sesiuni live. După fiecare sesiune primești un scurt recap cu ce ai de exersat.</p></div>
+      <!-- PLACEHOLDER answer: needs Andreea -->
+      <div class="faq__item reveal" style="--d:.16s"><h3>Am nevoie de pian acasă?</h3><p class="ph-text">[RĂSPUNSUL ANDREEI: PIAN, PIAN DIGITAL SAU CLAPĂ?]</p></div>
+      <!-- PLACEHOLDER answer: needs Andreea -->
+      <div class="faq__item reveal" style="--d:.24s"><h3>Cât costă după sesiunea gratuită?</h3><p class="ph-text">[PREȚ SAU „AFLI ÎN SESIUNE”]</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA: back to the desk, where the keys are already appearing -->
+<section class="final" id="rezerva">
+  <img class="final__img" src="frames/b/0121.webp" alt="Sub degetele de pe birou apar primele clape de pian" loading="lazy">
+  <div class="final__scrim" aria-hidden="true"></div>
+  <div class="final__txt">
+    <h2 class="reveal">Prima clapă e <em>o conversație.</em></h2>
+    <p class="reveal" style="--d:.1s">30 de minute, gratuit, fără obligații.</p>
+    <a class="btn btn--big reveal" style="--d:.18s" href="https://calendly.com/academiadepian/30min" target="_blank" rel="noopener">Rezervă sesiunea gratuită</a>
+  </div>
+</section>
+</template>
+
+<script src="app.js?v=v2-2"></script>
+<script src="audio.js?v=1"></script>
+</body>
+</html>

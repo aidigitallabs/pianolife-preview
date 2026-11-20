@@ -1,0 +1,14 @@
+/* background music toggle */
+.snd{position:fixed;right:14px;bottom:56px;z-index:60;display:flex;align-items:center;gap:9px;height:40px;padding:0 15px 0 12px;border-radius:99px;border:1px solid rgba(245,240,232,.28);background:rgba(10,4,14,.72);color:#f5f0e8;font:500 .74rem/1 "Inter","Segoe UI",Arial,sans-serif;letter-spacing:.08em;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:background .25s,border-color .25s,transform .25s}
+.snd:hover{transform:translateY(-2px);border-color:#ff7ffd}
+.snd:focus-visible{outline:2px solid #ff7ffd;outline-offset:3px}
+.snd svg{width:18px;height:18px;flex:none}
+.snd .snd__waves{opacity:0;transition:opacity .25s}
+.snd .snd__x{opacity:1;transition:opacity .25s}
+.snd[aria-pressed="true"]{border-color:#ff7ffd;background:rgba(33,8,38,.86)}
+.snd[aria-pressed="true"] .snd__waves{opacity:1}
+.snd[aria-pressed="true"] .snd__x{opacity:0}
+.snd--invite::after{content:"";position:absolute;inset:-1px;border-radius:99px;border:1px solid #ff7ffd;animation:sndPulse 2.4s ease-out infinite;pointer-events:none}
+@keyframes sndPulse{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(1.35,1.7)}}
+@media (max-width:767px){.snd{height:44px;padding:0 13px;top:84px;bottom:auto;left:12px;right:auto}.snd span{display:none}}
+@media (prefers-reduced-motion:reduce){.snd--invite::after{animation:none;opacity:0}.snd{transition:none}}
