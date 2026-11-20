@@ -181,7 +181,7 @@
     if (w !== cw || h !== ch) { canvas.width = cw = w; canvas.height = ch = h; curFrame = -1; }
   }
 
-  function draw(i) {
+  function draw(i, alpha) {
     // nearest already-loaded frame at or below i, else above
     var im = frames[i], k = i;
     while ((!im || !im.complete || !im.naturalWidth) && k > 0) { k--; im = frames[k]; }
@@ -192,7 +192,9 @@
     var dw = iw * s, dh = ih * s;
     var focus = window.innerWidth < 768 ? 0.74 : 0.5;     // mobile: right-centre of the frame
     var dx = -(dw - cw) * focus, dy = -(dh - ch) * 0.5;
+    if (alpha !== undefined) ctx.globalAlpha = alpha;
     ctx.drawImage(im, dx, dy, dw, dh);
+    ctx.globalAlpha = 1;
   }
 
   function beatStyle(p) {
@@ -231,8 +233,8 @@
      each of the 8 texts is fully readable; the film eases to the next one and waits.
      Extra input during the same gesture (wheel inertia, a long swipe) is ignored.
      Only clearly impatient scrolling (5 separate gestures in 2.6 s) runs to the end. */
-  var PLAY = [STOPS[0], .16, .255, .395, .53, .65, .83, 1];
-  var filmGest = false, rush = 1, lastIn = 0, lastMag = 0, gestStart = 0, gestures = [];
+  var PLAY = [STOPS[0], .14, .235, .365, .505, .625, .785, 1];   // where each text has just become readable
+  var started = false, boost = false, filmGest = false, rush = 1, lastIn = 0, lastMag = 0, gestStart = 0, gestures = [];
   function hurry() { return rush; }
   function newGesture(delta) {
     var now = performance.now(), mag = Math.abs(delta);
@@ -242,8 +244,8 @@
     return fresh;
   }
   function locked() { return window.scrollY <= 2 && cur < 1; }
-  function nextStop() { for (var i = 0; i < PLAY.length; i++) if (PLAY[i] > cur + 0.001) return PLAY[i]; return 1; }
-  function prevStop() { for (var i = PLAY.length - 1; i >= 0; i--) if (PLAY[i] < cur - 0.001) return PLAY[i]; return PLAY[0]; }
+  function nextStop() { for (var i = 0; i < PLAY.length; i++) if (PLAY[i] > cur + 0.006) return PLAY[i]; return 1; }
+  function prevStop() { for (var i = PLAY.length - 1; i >= 0; i--) if (PLAY[i] < cur - 0.03) return PLAY[i]; return PLAY[0]; }
   function intent(delta) {                     // returns true when the input was used by the film
     if (!manifest) return false;
     if (delta > 0 && window.scrollY <= 2 && cur >= 1) {   // tail of the gesture that ended the film: do not leak into the page
@@ -256,8 +258,9 @@
         var now = performance.now();
         gestures = gestures.filter(function (t) { return now - t < 2600; });
         gestures.push(now);
-        if (cur === target || target < cur) target = nextStop();
-        if (gestures.length >= 5) { target = 1; rush = 7; }   // clearly wants out
+        started = true;
+        if (!boost || target < cur) { target = nextStop(); boost = true; }
+        if (gestures.length >= 5) { target = 1; rush = 7; boost = true; }   // clearly wants out
         kick();
       }
       return true;
@@ -265,32 +268,54 @@
     if (delta < 0 && window.scrollY <= 2 && cur > STOPS[0] + 0.001) {
       if (newGesture(delta)) {
         rush = 1; gestures = [];
-        if (cur === target || target > cur) target = prevStop();
+        if (!boost || target > cur) { target = prevStop(); boost = true; }
         kick();
       }
       return true;
     }
     return false;
   }
+  /* After the first scroll the film never freezes: it drifts on by itself in slow
+     motion (slower while a text is on screen, so there is time to read) and a
+     scroll only pushes it smoothly to the next text. Neighbouring frames are
+     cross-faded so slow motion stays fluid. */
+  var READ_SECS = 6.5;                         // time each text stays readable if nobody scrolls
+  function pace(p) {                           // drift speed, x real time
+    for (var i = 0; i < RANGES.length; i++) {
+      var a = RANGES[i][0] + .02, b = RANGES[i][1] - .02;
+      if (p >= a && p <= b) return Math.max(.08, Math.min(.4, (b - a) * (manifest.count / 24) / READ_SECS));
+    }
+    return 0.7;
+  }
   function tick(now) {
     var n = manifest.count;
     var dt = lastT ? Math.min(0.05, (now - lastT) / 1000) : 0.016;
     lastT = now;
-    var dist = target - cur;
-    var cruise = SPEED * 24 / (n - 1);                       // playhead units per second
-    var vmax = cruise * (dist < 0 ? 2.6 : hurry());
-    var want = Math.max(-vmax, Math.min(vmax, dist * 2.4 * (dist < 0 ? 1 : Math.sqrt(hurry()))));
-    vel += (want - vel) * (1 - Math.exp(-dt / 0.2));         // gentle start, gentle stop
+    var unit = 24 / (n - 1);                                 // playhead units per second at real time
+    var drift = (started && cur < 1) ? unit * pace(cur) : 0;
+    var want = drift;
+    if (boost) {
+      var dist = target - cur;
+      var vmax = SPEED * unit * (dist < 0 ? 2.6 : hurry());
+      want = Math.max(-vmax, Math.min(vmax, dist * (dist < 0 ? 2.4 : 2.0 * Math.sqrt(hurry()))));
+      if (dist > 0) want = Math.max(want, drift);            // never slower than the drift: no stop on arrival
+      if ((dist > 0 && want <= drift) || (dist < 0 && dist > -0.003) || dist === 0) { boost = false; rush = 1; }
+    }
+    vel += (want - vel) * (1 - Math.exp(-dt / 0.22));        // gentle start, gentle change of pace
     cur += vel * dt;
-    if ((dist > 0 && cur >= target) || (dist < 0 && cur <= target)) { cur = target; vel = 0; }
-    if (Math.abs(target - cur) < 0.0006 && Math.abs(vel) < 0.004) { cur = target; vel = 0; }
-    var f = Math.min(n - 1, Math.max(0, Math.round(cur * (n - 1))));
-    if (f !== curFrame) { curFrame = f; draw(f); }
+    if (cur >= 1) { cur = 1; vel = 0; boost = false; rush = 1; }
+    if (cur < PLAY[0]) { cur = PLAY[0]; vel = 0; }
+    var pos = cur * (n - 1), f = Math.min(n - 1, Math.floor(pos)), frac = pos - f;
+    var key = Math.round(pos * 16);
+    if (key !== curFrame) {
+      curFrame = key; draw(f);
+      if (frac > 0.04 && f < n - 1 && frames[f + 1] && frames[f + 1].naturalWidth) draw(f + 1, frac);
+    }
     beatStyle(cur);
     window.plFilm = { cur: cur };           // read by audio.js
-    hint.style.opacity = (cur === target && cur < 1 && window.scrollY <= 2) ? 1 : 0;
-    if (cur !== target) requestAnimationFrame(tick);
-    else { running = false; lastT = 0; arrivedAt = performance.now(); rush = 1; }
+    hint.style.opacity = (!started && cur < 1 && window.scrollY <= 2) ? 1 : 0;
+    if (boost || (started && cur < 1) || Math.abs(vel) > 0.0005) requestAnimationFrame(tick);
+    else { running = false; lastT = 0; vel = 0; }
   }
   function kick() { if (!running && manifest) { running = true; lastT = 0; requestAnimationFrame(tick); } }
   function bindInput() {
@@ -312,7 +337,7 @@
     });
     // scrollbar drag, anchor links, restored scroll position: just finish the film
     window.addEventListener('scroll', function () {
-      if (window.scrollY > 10 && target < 1) { rush = 7; target = 1; kick(); }
+      if (window.scrollY > 10 && target < 1) { rush = 7; target = 1; boost = true; started = true; kick(); }
     }, { passive: true });
   }
 
