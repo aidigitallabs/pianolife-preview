@@ -314,7 +314,8 @@
      the picture keeps drifting very slowly, and if nobody scrolls the next
      sentence arrives on its own. Five gestures in quick succession skip to the end. */
   var DRIFT = .05;
-  var started = false, finish = false, filmGest = false, lastIn = 0, lastMag = 0, gestStart = 0, gestures = [];
+  var started = false, finish = false, filmGest = false, lastIn = 0, lastMag = 0, gestStart = 0, gestures = [], firstT = 0, lastAdv = 0;
+  var GRACE = 5000;                           // ms of normal pace before hammering may skip ahead
   function newGesture(delta) {
     var now = performance.now(), mag = Math.abs(delta);
     var fresh = now - lastIn > 130 || (mag > 30 && mag > lastMag * 2.5 && now - gestStart > 300);
@@ -324,7 +325,8 @@
   }
   function locked() { return window.scrollY <= 2 && cur < 1; }
   function advance() {
-    if (!started) { started = true; document.body.classList.add('film-started'); }
+    if (!started) { started = true; firstT = performance.now(); document.body.classList.add('film-started'); }
+    lastAdv = performance.now();
     if (stepIdx < steps.length - 1) {
       stepIdx++;
       var st = steps[stepIdx];
@@ -350,7 +352,10 @@
         var now = performance.now();
         gestures = gestures.filter(function (t) { return now - t < 2600; });
         gestures.push(now);
-        if (gestures.length >= 5) { finish = true; target = 1; typeTo(chars.length); kick(); }
+        if (gestures.length >= 5) {            // hammering: hold the normal pace for the first seconds, then skip
+          if (started && now - firstT > GRACE) { finish = true; target = 1; typeTo(chars.length); kick(); }
+          else if (now - lastAdv > 550) advance();
+        }
         else advance();
       }
       return true;
